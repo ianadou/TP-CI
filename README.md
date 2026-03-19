@@ -7,7 +7,7 @@ Projet réalisé dans le cadre du cours CI/CD (M1 Full Stack).
 
 ## Stack
 
-- PHP 8.4+
+- PHP 8.5
 - Symfony 8
 - PHPUnit 13
 - PHP-CS-Fixer + PHPStan (niveau 8)
@@ -18,19 +18,19 @@ Projet réalisé dans le cadre du cours CI/CD (M1 Full Stack).
 
 - [Docker](https://docs.docker.com/get-docker/) et Docker Compose
 
-## Lancer le projet
+## Commandes
 
-```bash
-docker compose up
-```
+| Commande        | Description                              |
+|-----------------|------------------------------------------|
+| `make start`    | Lance l'API sur `http://localhost:8000`  |
+| `make stop`     | Arrête les containers                    |
+| `make test`     | Lance les tests PHPUnit                  |
+| `make lint`     | Vérifie le style de code                 |
+| `make lint-fix` | Corrige automatiquement le style         |
+| `make stan`     | Lance l'analyse statique PHPStan         |
+| `make shell`    | Ouvre un shell dans le container         |
 
-L'API est disponible sur `http://localhost:8000`.
-
-## Lancer les tests
-
-```bash
-docker compose run --rm app php bin/phpunit
-```
+> Sans `make` : toutes ces commandes utilisent Docker, aucune installation PHP locale requise.
 
 ## Endpoints
 
