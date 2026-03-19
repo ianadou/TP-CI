@@ -145,7 +145,7 @@ class StudentController extends AbstractController
             $data['field'],
         );
 
-        return $this->json($student->toArray(), Response::HTTP_CREATED);
+        return $this->json($student->toArray(), Response::HTTP_OK);
     }
 
     #[Route('/students/{id}', methods: ['GET'])]
