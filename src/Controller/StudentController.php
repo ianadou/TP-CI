@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Repository\StudentRepository;
+use App\Validator\StudentValidator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,6 +17,7 @@ class StudentController extends AbstractController
 {
     public function __construct(
         private readonly StudentRepository $repository,
+        private readonly StudentValidator $validator,
     ) {
     }
 
@@ -46,6 +48,31 @@ class StudentController extends AbstractController
         $students = array_map(fn ($s) => $s->toArray(), $this->repository->search($query));
 
         return $this->json($students);
+    }
+
+    #[Route('/students', methods: ['POST'])]
+    public function create(Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true) ?? [];
+
+        $errors = $this->validator->validate($data);
+        if ([] !== $errors) {
+            return $this->json(['errors' => $errors], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (null !== $this->repository->findByEmail($data['email'])) {
+            return $this->json(['error' => 'Un étudiant avec cet email existe déjà'], Response::HTTP_CONFLICT);
+        }
+
+        $student = $this->repository->create(
+            $data['firstName'],
+            $data['lastName'],
+            $data['email'],
+            (float) $data['grade'],
+            $data['field'],
+        );
+
+        return $this->json($student->toArray(), Response::HTTP_CREATED);
     }
 
     #[Route('/students/{id}', methods: ['GET'])]
