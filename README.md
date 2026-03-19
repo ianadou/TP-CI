@@ -25,6 +25,7 @@ Projet réalisé dans le cadre du cours CI/CD (M1 Full Stack).
 | `make start`    | Lance l'API sur `http://localhost:8000`  |
 | `make stop`     | Arrête les containers                    |
 | `make test`     | Lance les tests PHPUnit                  |
+| `make coverage` | Affiche le rapport de couverture         |
 | `make lint`     | Vérifie le style de code                 |
 | `make lint-fix` | Corrige automatiquement le style         |
 | `make stan`     | Lance l'analyse statique PHPStan         |
