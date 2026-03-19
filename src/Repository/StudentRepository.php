@@ -24,6 +24,47 @@ class StudentRepository
         return array_values($this->students);
     }
 
+    /** @return array<string, mixed> */
+    public function findPaginated(int $page, int $limit, string $sort, string $order): array
+    {
+        $students = array_values($this->students);
+
+        usort($students, function (Student $a, Student $b) use ($sort, $order): int {
+            $valA = match ($sort) {
+                'id' => $a->id,
+                'firstName' => $a->firstName,
+                'lastName' => $a->lastName,
+                'email' => $a->email,
+                'grade' => $a->grade,
+                default => $a->field,
+            };
+            $valB = match ($sort) {
+                'id' => $b->id,
+                'firstName' => $b->firstName,
+                'lastName' => $b->lastName,
+                'email' => $b->email,
+                'grade' => $b->grade,
+                default => $b->field,
+            };
+            $result = $valA <=> $valB;
+
+            return 'desc' === $order ? -$result : $result;
+        });
+
+        $total = count($students);
+        $items = array_slice($students, ($page - 1) * $limit, $limit);
+
+        return [
+            'data' => array_map(fn (Student $s) => $s->toArray(), $items),
+            'meta' => [
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit,
+                'totalPages' => (int) ceil($total / $limit),
+            ],
+        ];
+    }
+
     public function findById(int $id): ?Student
     {
         return $this->students[$id] ?? null;

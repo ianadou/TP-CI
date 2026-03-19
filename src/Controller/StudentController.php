@@ -21,12 +21,29 @@ class StudentController extends AbstractController
     ) {
     }
 
-    #[Route('/students', methods: ['GET'])]
-    public function list(): JsonResponse
-    {
-        $students = array_map(fn ($s) => $s->toArray(), $this->repository->findAll());
+    /** @var string[] */
+    private const SORTABLE_FIELDS = ['id', 'firstName', 'lastName', 'email', 'grade', 'field'];
 
-        return $this->json($students);
+    #[Route('/students', methods: ['GET'])]
+    public function list(Request $request): JsonResponse
+    {
+        $page = max(1, $request->query->getInt('page', 1));
+        $limit = min(100, max(1, $request->query->getInt('limit', 10)));
+        $sort = $request->query->getString('sort', 'id');
+        $order = $request->query->getString('order', 'asc');
+
+        if (!in_array($sort, self::SORTABLE_FIELDS, true)) {
+            return $this->json(
+                ['error' => 'Champ de tri invalide. Valeurs acceptées : '.implode(', ', self::SORTABLE_FIELDS)],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        if (!in_array($order, ['asc', 'desc'], true)) {
+            return $this->json(['error' => 'L\'ordre doit être "asc" ou "desc"'], Response::HTTP_BAD_REQUEST);
+        }
+
+        return $this->json($this->repository->findPaginated($page, $limit, $sort, $order));
     }
 
     // stats et search déclarés avant {id} pour éviter un conflit de routing
