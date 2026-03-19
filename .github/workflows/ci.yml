@@ -18,7 +18,11 @@ jobs:
 
     strategy:
       matrix:
-        php-version: ["8.4", "8.5"]
+        include:
+          - php-version: "8.4"
+            coverage: none
+          - php-version: "8.5"
+            coverage: pcov
 
     steps:
       - name: Checkout
@@ -29,7 +33,7 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           extensions: ctype, iconv, xml, mbstring
-          coverage: none
+          coverage: ${{ matrix.coverage }}
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
@@ -42,6 +46,10 @@ jobs:
 
       - name: Tests
         run: ./vendor/bin/phpunit
+
+      - name: Coverage
+        if: matrix.coverage == 'pcov'
+        run: ./vendor/bin/phpunit --coverage-text --colors=never
 
   # Auto-merge feat/** et fix/** dans develop quand la CI est verte
   merge-to-develop:
@@ -68,29 +76,6 @@ jobs:
           git checkout develop
           git merge --no-ff origin/${{ github.ref_name }} -m "chore(ci): auto-merge ${{ github.ref_name }} → develop"
           git push origin develop
-
-  # Coverage uniquement sur develop — PCOV est plus rapide que Xdebug en CI
-  coverage:
-    name: Coverage
-    needs: ci
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup PHP avec PCOV
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.5"
-          extensions: ctype, iconv, xml, mbstring
-          coverage: pcov
-
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
-
-      - name: Coverage report
-        run: ./vendor/bin/phpunit --coverage-text --colors=never
 
   # Release manuelle develop → main (bouton "Run workflow" dans GitHub Actions)
   release-to-main:
