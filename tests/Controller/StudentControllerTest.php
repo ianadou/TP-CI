@@ -178,6 +178,33 @@ class StudentControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
     }
 
+    public function testUpdateStudentDuplicateEmail(): void
+    {
+        // Essaie de mettre l'email de Bob sur Alice → conflit
+        $this->requestJson('PUT', '/v1/students/1', [
+            'firstName' => 'Alice',
+            'lastName' => 'Martin',
+            'email' => 'bob.dupont@example.com',
+            'grade' => 15.5,
+            'field' => 'informatique',
+        ]);
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
+    }
+
+    public function testUpdateStudentInvalidId(): void
+    {
+        $this->requestJson('PUT', '/v1/students/abc', [
+            'firstName' => 'Jean',
+            'lastName' => 'Dupont',
+            'email' => 'jean@example.com',
+            'grade' => 14.0,
+            'field' => 'informatique',
+        ]);
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+    }
+
     // --- DELETE ---
 
     public function testDeleteStudent(): void
@@ -196,7 +223,37 @@ class StudentControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
     }
 
+    public function testDeleteStudentInvalidId(): void
+    {
+        $this->client->request('DELETE', '/v1/students/abc');
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+    }
+
     // --- Stats / Search ---
+
+    public function testCreateStudentInvalidEmail(): void
+    {
+        $this->requestJson('POST', '/v1/students', [
+            'firstName' => 'Jean',
+            'lastName' => 'Dupont',
+            'email' => 'pas-un-email',
+            'grade' => 14.0,
+            'field' => 'informatique',
+        ]);
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+    }
+
+    public function testListSortByFirstNameAsc(): void
+    {
+        $this->client->request('GET', '/v1/students?sort=firstName&order=asc');
+
+        $data = $this->decodeResponse();
+        // Alice < Bob < Clara < David < Emma → Alice en premier
+        $this->assertSame('Alice', $data['data'][0]['firstName']);
+        $this->assertSame('Emma', $data['data'][4]['firstName']);
+    }
 
     public function testStats(): void
     {
