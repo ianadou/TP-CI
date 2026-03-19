@@ -10,11 +10,11 @@ stop:
 
 ## Lance les tests PHPUnit
 test:
-	docker compose run --rm app php bin/phpunit
+	docker compose run --rm -e APP_ENV=test app php bin/phpunit
 
 ## Affiche le rapport de couverture de code
 coverage:
-	docker compose run --rm app php bin/phpunit --coverage-text --colors=never
+	docker compose run --rm -e APP_ENV=test app php bin/phpunit --coverage-text --colors=never
 
 ## Vérifie le style de code (lecture seule)
 lint:
