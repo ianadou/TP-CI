@@ -90,4 +90,59 @@ class StudentController extends AbstractController
 
         return $this->json($student->toArray());
     }
+
+    #[Route('/students/{id}', methods: ['PUT'])]
+    public function update(string $id, Request $request): JsonResponse
+    {
+        if (!ctype_digit($id)) {
+            return $this->json(['error' => 'L\'identifiant doit être un entier positif'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $student = $this->repository->findById((int) $id);
+
+        if (null === $student) {
+            return $this->json(['error' => 'Étudiant non trouvé'], Response::HTTP_NOT_FOUND);
+        }
+
+        $data = json_decode($request->getContent(), true) ?? [];
+
+        $errors = $this->validator->validate($data);
+        if ([] !== $errors) {
+            return $this->json(['errors' => $errors], Response::HTTP_BAD_REQUEST);
+        }
+
+        $existing = $this->repository->findByEmail($data['email']);
+        if (null !== $existing && $existing->id !== $student->id) {
+            return $this->json(['error' => 'Un étudiant avec cet email existe déjà'], Response::HTTP_CONFLICT);
+        }
+
+        $updated = $this->repository->update(
+            $student,
+            $data['firstName'],
+            $data['lastName'],
+            $data['email'],
+            (float) $data['grade'],
+            $data['field'],
+        );
+
+        return $this->json($updated->toArray());
+    }
+
+    #[Route('/students/{id}', methods: ['DELETE'])]
+    public function delete(string $id): JsonResponse
+    {
+        if (!ctype_digit($id)) {
+            return $this->json(['error' => 'L\'identifiant doit être un entier positif'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $student = $this->repository->findById((int) $id);
+
+        if (null === $student) {
+            return $this->json(['error' => 'Étudiant non trouvé'], Response::HTTP_NOT_FOUND);
+        }
+
+        $this->repository->delete((int) $id);
+
+        return $this->json(['message' => 'Étudiant supprimé avec succès']);
+    }
 }
