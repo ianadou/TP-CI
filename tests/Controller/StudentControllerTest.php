@@ -37,7 +37,43 @@ class StudentControllerTest extends WebTestCase
     {
         $this->client->request('GET', '/v1/students');
 
-        $this->assertCount(5, $this->decodeResponse());
+        $data = $this->decodeResponse();
+        $this->assertArrayHasKey('data', $data);
+        $this->assertArrayHasKey('meta', $data);
+        $this->assertCount(5, $data['data']);
+        $this->assertSame(5, $data['meta']['total']);
+    }
+
+    public function testListPagination(): void
+    {
+        $this->client->request('GET', '/v1/students?page=1&limit=2');
+
+        $data = $this->decodeResponse();
+        $this->assertCount(2, $data['data']);
+        $this->assertSame(3, $data['meta']['totalPages']);
+    }
+
+    public function testListSortByGradeDesc(): void
+    {
+        $this->client->request('GET', '/v1/students?sort=grade&order=desc');
+
+        $data = $this->decodeResponse();
+        // Clara a 18.0, la meilleure note → doit être en premier
+        $this->assertSame('Clara', $data['data'][0]['firstName']);
+    }
+
+    public function testListInvalidSortField(): void
+    {
+        $this->client->request('GET', '/v1/students?sort=invalid');
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+    }
+
+    public function testListInvalidOrder(): void
+    {
+        $this->client->request('GET', '/v1/students?order=random');
+
+        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
     }
 
     public function testShowStudent(): void
