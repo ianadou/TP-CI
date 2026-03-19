@@ -23,7 +23,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: ctype, iconv, xml
+          extensions: ctype, iconv, xml, mbstring
           coverage: none
 
       - name: Install dependencies
