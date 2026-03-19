@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: dev
+      # Surcharger via .env.local en production
+      APP_SECRET: ${APP_SECRET:-dev-secret-not-for-production}
