@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, "feat/**", "fix/**"]
+  pull_request:
+    branches: [main, develop]
+  # Permet de déclencher manuellement la release develop → main depuis l'UI GitHub
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  ci:
+    name: PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - php-version: "8.4"
+            coverage: none
+          - php-version: "8.5"
+            coverage: pcov
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: ctype, iconv, xml, mbstring
+          coverage: ${{ matrix.coverage }}
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: PHP-CS-Fixer
+        run: ./vendor/bin/php-cs-fixer fix --dry-run --diff
+
+      - name: PHPStan
+        run: ./vendor/bin/phpstan analyse --no-progress
+
+      - name: Tests
+        run: ./vendor/bin/phpunit
+
+      - name: Coverage
+        if: matrix.coverage == 'pcov'
+        run: ./vendor/bin/phpunit --coverage-text --colors=never
+
+  # Auto-merge feat/** et fix/** dans develop quand la CI est verte
+  merge-to-develop:
+    name: Auto-merge → develop
+    needs: ci
+    runs-on: ubuntu-latest
+    # Ne tourne que sur un push direct (pas une PR) vers feat/** ou fix/**
+    if: |
+      github.event_name == 'push' &&
+      (startsWith(github.ref, 'refs/heads/feat/') || startsWith(github.ref, 'refs/heads/fix/'))
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge into develop
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin develop
+          git checkout develop
+          git merge --no-ff origin/${{ github.ref_name }} -m "chore(ci): auto-merge ${{ github.ref_name }} → develop"
+          git push origin develop
+
+  # Release manuelle develop → main (bouton "Run workflow" dans GitHub Actions)
+  release-to-main:
+    name: Release → main
+    needs: ci
+    runs-on: ubuntu-latest
+    # Uniquement sur workflow_dispatch déclenché depuis develop
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge develop into main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin
+          git checkout main
+          git merge --no-ff origin/develop -m "chore(ci): release → main"
+          git push origin main
