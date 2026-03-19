@@ -1,4 +1,4 @@
-.PHONY: start stop test lint lint-fix stan shell
+.PHONY: start stop test coverage lint lint-fix stan shell
 
 ## Lance l'API sur http://localhost:8000
 start:
@@ -11,6 +11,10 @@ stop:
 ## Lance les tests PHPUnit
 test:
 	docker compose run --rm app php bin/phpunit
+
+## Affiche le rapport de couverture de code
+coverage:
+	docker compose run --rm app php bin/phpunit --coverage-text --colors=never
 
 ## Vérifie le style de code (lecture seule)
 lint:
